@@ -5,14 +5,14 @@ using UnityEngine;
 public class King : Piece {
     public int checkCount = 0;
     public Piece checker;
-    public override List<Board.Move> GetAvailableMoves() {
+    public override List<Board.Move> GetAvailableMoves(Board.Square[,] board) {
         List<Board.Move> moves = new List<Board.Move>();
-        moves.AddRange(GetMovesInDirection(Board.Direction.East, square, false));
-        moves.AddRange(GetMovesInDirection(Board.Direction.West, square, false));
-        moves.AddRange(GetMovesInDirection(Board.Direction.South, square, false));
-        moves.AddRange(GetMovesInDirection(Board.Direction.North, square, false));
-        moves.AddRange(GetMovesInDirection(Board.Direction.Northeast, square, false));
-        moves.AddRange(GetMovesInDirection(Board.Direction.Southwest, square, false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.East, square, board,false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.West, square, board, false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.South, square, board, false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.North, square, board, false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.Northeast, square, board, false));
+        moves.AddRange(GetMovesInDirection(Board.Direction.Southwest, square, board, false));
         if (CanKingsideCastle()) {
             moves.Add(color == Color.white ? new Board.Move(0, 6, this) : new Board.Move(7, 6, this));
         }
@@ -22,7 +22,7 @@ public class King : Piece {
         List<Board.Move> itemsToRemove = new List<Board.Move>();
         foreach(Board.Move m in moves) {
             foreach(Piece p in Board.instance.GetOpposingPieces(color)) {
-                foreach(Board.Move move in p.GetAvailableMoves()) {
+                foreach(Board.Move move in p.GetAvailableMoves(Board.instance.GetBoard())) {
                     if(m.file == move.file && m.rank == move.rank) {
                         itemsToRemove.Add(m);
                     }
@@ -35,10 +35,10 @@ public class King : Piece {
         return moves;
     }
 
-    public bool CheckForCheck() {
+    public bool CheckForCheck(Board.Square[,] board) {
         checkCount = 0;
         foreach (Piece p in Board.instance.GetOpposingPieces(color)) {
-            foreach (Board.Move move in p.GetAvailableMoves()) {
+            foreach (Board.Move move in p.GetAvailableMoves(board)) {
                 if (move.file == square.file && move.rank == square.rank) {
                     checkCount++;
                     checker = move.piece;
@@ -51,7 +51,7 @@ public class King : Piece {
     private bool CanKingsideCastle() {
         bool overAndIntoCheck = false;
         foreach (Piece p in Board.instance.GetOpposingPieces(color)) {
-            foreach (Board.Move move in p.GetAvailableMoves()) {
+            foreach (Board.Move move in p.GetAvailableMoves(Board.instance.GetBoard())) {
                 Board.Square s = (color == Color.white ? Board.instance.GetSquare(0, 5) : Board.instance.GetSquare(7, 5));
                 Board.Square s2 = (color == Color.white ? Board.instance.GetSquare(0, 6) : Board.instance.GetSquare(7, 6));
                 if ((move.file == s.file && move.rank == s.rank) || (move.file == s2.file && move.rank == s2.rank)) {
@@ -59,7 +59,7 @@ public class King : Piece {
                 }
             }
         }
-        return overAndIntoCheck && moveHistory.Count == 0 && checkCount == 0 && (color == Color.white ? Board.instance.GetSquare(0, 5).piece == null : Board.instance.GetSquare(7, 5).piece == null)
+        return !overAndIntoCheck && moveHistory.Count == 0 && checkCount == 0 && (color == Color.white ? Board.instance.GetSquare(0, 5).piece == null : Board.instance.GetSquare(7, 5).piece == null)
             && (color == Color.white ? Board.instance.GetSquare(0, 6).piece == null : Board.instance.GetSquare(7, 6).piece == null)
             && (color == Color.white ? Board.instance.GetSquare(0, 7).piece != null && Board.instance.GetSquare(0, 7).piece.moveHistory.Count == 0 :
             Board.instance.GetSquare(7, 7).piece != null && Board.instance.GetSquare(7, 7).piece.moveHistory.Count == 0);
@@ -68,7 +68,7 @@ public class King : Piece {
     private bool CanQueensideCastle() {
         bool overAndIntoCheck = false;
         foreach (Piece p in Board.instance.GetOpposingPieces(color)) {
-            foreach (Board.Move move in p.GetAvailableMoves()) {
+            foreach (Board.Move move in p.GetAvailableMoves(Board.instance.GetBoard())) {
                 Board.Square s = (color == Color.white ? Board.instance.GetSquare(0, 1) : Board.instance.GetSquare(7, 1));
                 Board.Square s2 = (color == Color.white ? Board.instance.GetSquare(0, 2) : Board.instance.GetSquare(7, 2));
                 Board.Square s3 = (color == Color.white ? Board.instance.GetSquare(0, 3) : Board.instance.GetSquare(7, 3));
@@ -77,7 +77,7 @@ public class King : Piece {
                 }
             }
         }
-        return overAndIntoCheck && moveHistory.Count == 0 && checkCount == 0 && (color == Color.white ? Board.instance.GetSquare(0, 1).piece == null : Board.instance.GetSquare(7, 1).piece == null)
+        return !overAndIntoCheck && moveHistory.Count == 0 && checkCount == 0 && (color == Color.white ? Board.instance.GetSquare(0, 1).piece == null : Board.instance.GetSquare(7, 1).piece == null)
             && (color == Color.white ? Board.instance.GetSquare(0, 2).piece == null : Board.instance.GetSquare(7, 2).piece == null)
             && (color == Color.white ? Board.instance.GetSquare(0, 3).piece == null : Board.instance.GetSquare(7, 3).piece == null)
             && (color == Color.white ? Board.instance.GetSquare(0, 0).piece != null && Board.instance.GetSquare(0, 0).piece.moveHistory.Count == 0 :

@@ -67,6 +67,14 @@ public class Board : MonoBehaviour {
 
         //Debug.Log(BoardToString(board));
     }
+
+    public Square[,] CopyBoard() {
+        return board.Clone() as Square[,];
+    }
+
+    public Square[,] GetBoard() {
+        return board;
+    }
     public static string GetNotation(int file, int rank) {
         return Files[rank] + (file + 1);
     }
@@ -108,26 +116,29 @@ public class Board : MonoBehaviour {
         }
     }
 
-    public List<Move> GetMovesBetween(Move start, Move end) {
-        List<Move> between = new List<Move>();
-        int xDiff = start.file - end.file;
-        int yDiff = start.rank - end.rank;
-        int xSign = xDiff > 0 ? 1 : -1;
-        int ySign = yDiff > 0 ? 1 : -1;
-        for(int i = 0; i < xDiff * xSign; ++i) {
-            for(int j = 0; j < yDiff * ySign; ++j) {
-                between.Add(new Move((start.file + xSign * i) % RankCount, (start.rank + ySign * j) % FileCount, start.piece));
-            }
-        }
-        return between;
-    }
-
     public static Color GetOppositeColor(Color color) {
         if(color == Color.white) {
             return Color.black;
         } else {
             return Color.white;
         }
+    }
+
+    public bool SimulateMove(Move move, Square[,] copy) {
+        int tempFile = move.piece.square.file;
+        int tempRank = move.piece.square.rank;
+        Piece p = null;
+        if (GetPiece(move.rank, move.file) != null) {
+            p = copy[move.rank, move.file].piece;
+        }
+        copy[move.piece.square.file, move.piece.square.rank].piece = null;
+        copy[move.file, move.rank].piece = move.piece;
+        move.piece.square = GetSquare(move.file, move.rank);
+        bool returnVal = !GetKing(move.piece.color).CheckForCheck(copy);
+        move.piece.square = GetSquare(tempFile, tempRank);
+        copy[move.file, move.rank].piece = p;
+        copy[move.piece.square.file, move.piece.square.rank].piece = move.piece;
+        return returnVal;
     }
 
     public void MakeMove(Move move, GameObject piece) {
@@ -157,10 +168,9 @@ public class Board : MonoBehaviour {
         move.piece.square = GetSquare(move.rank, move.file);
         move.piece.moveHistory.Add(move);
         piece.transform.SetParent(physicalBoard[move.rank, move.file].transform, false);
-        Debug.Log(BoardToString(board));
     }
 
-    public Square GetSquareInDirection(Square square, Direction direction) {
+    public Square GetSquareInDirection(Square square, Direction direction, Square[,] board) {
         switch (direction) {
             case Direction.East:
                 if (IsValidMove(square.file, square.rank + 1)) {

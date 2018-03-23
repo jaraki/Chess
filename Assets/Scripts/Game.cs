@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class Game : MonoBehaviour {
     public GameObject lighting;
+    public Text checkText;
     private GameObject selected;
     private Piece selectedPiece;
     private Vector3 initialPosition;
@@ -14,41 +16,40 @@ public class Game : MonoBehaviour {
     private Color turnColor;
     private bool gameEnded;
     // Use this for initialization
-    void Start () {
+    void Start() {
         initialPosition = Camera.main.transform.position;
         initialRotation = Camera.main.transform.rotation;
         finalPosition = lighting.transform.position;
         finalRotation = lighting.transform.rotation;
         turnColor = Color.white;
         gameEnded = false;
-	}
-
-    private void SwitchTurns() {
-        turnColor = turnColor == Color.white ? Color.black : Color.white;
-        if (Board.instance.GetKing(turnColor).CheckForCheck()) {
-            List<Board.Move> blocks = new List<Board.Move>();
-            foreach (Piece p in Board.instance.GetOpposingPieces(Board.GetOppositeColor(turnColor))) {
-                foreach (Board.Move m in p.GetAvailableMoves()) {
-                    King king = Board.instance.GetKing(turnColor);
-                    if (king.checkCount == 1 && selectedPiece != king) {
-                        Piece checker = king.checker;
-                        foreach (Board.Move move in Board.instance.GetMovesBetween(new Board.Move(king.square.file, king.square.rank, king), new Board.Move(checker.square.file, checker.square.rank, checker))) {
-                            Debug.Log(Board.GetNotation(move.file, move.rank));
-                            if (move.file == m.file && move.rank == m.rank) {
-                                blocks.Add(new Board.Move(m.file, m.rank, p));
-                            }
-                        }
-                    } else if (king.checkCount > 1 && selectedPiece != king) {
-                        break;
-                    }
+    }
+    public List<Board.Move> GetBlocks() {
+        List<Board.Move> blocks = new List<Board.Move>();
+        foreach (Piece p in Board.instance.GetOpposingPieces(Board.GetOppositeColor(turnColor))) {
+            foreach (Board.Move m in p.GetAvailableMoves(Board.instance.GetBoard())) {
+                Board.Square[,] copy = Board.instance.CopyBoard();
+                Debug.Log(Board.BoardToString(copy));
+                Debug.Log(Board.instance.GetKing(turnColor).CheckForCheck(copy));
+                if (Board.instance.SimulateMove(m, copy)) {
+                    blocks.Add(m);
                 }
             }
-
-            if (Board.instance.GetKing(turnColor).GetAvailableMoves().Count == 0 && blocks.Count == 0 && !gameEnded) {
-                Debug.Log("Checkmate! " + Board.GetOppositeColor(turnColor) + " wins!");
+        }
+        foreach(Board.Move block in blocks) {
+            Debug.Log(Board.GetNotation(block.file, block.rank));
+        }
+        return blocks;
+    }
+    private void SwitchTurns() {
+        turnColor = turnColor == Color.white ? Color.black : Color.white;
+        if (Board.instance.GetKing(turnColor).CheckForCheck(Board.instance.GetBoard())) {
+            List<Board.Move> blocks = GetBlocks();
+            if (Board.instance.GetKing(turnColor).GetAvailableMoves(Board.instance.GetBoard()).Count == 0 && blocks.Count == 0 && !gameEnded) {
+                checkText.text = "Checkmate!";
                 gameEnded = true;
             } else {
-                Debug.Log("Check!");
+                checkText.text = "Check!";
             }
         }
     }
@@ -68,29 +69,30 @@ public class Game : MonoBehaviour {
                     }
                     selected = hitInfo.transform.gameObject;
                     selectedPiece = selected.GetComponent<Piece>();
-                    if(selectedPiece.color != turnColor) {
+                    if (selectedPiece.color != turnColor) {
                         return;
                     }
-                    Debug.Log(Board.GetNotation(selectedPiece.square.file, selectedPiece.square.rank));
                     Board.instance.ClearMoves();
-                    foreach (Board.Move m in selectedPiece.GetAvailableMoves()) {
-                        King king = Board.instance.GetKing(turnColor);
-                        if (king.CheckForCheck() && king.checkCount == 1 && selectedPiece != king) {
-                            Piece checker = king.checker;
-                            foreach (Board.Move move in Board.instance.GetMovesBetween(new Board.Move(king.square.file, king.square.rank, king), new Board.Move(checker.square.file, checker.square.rank, checker))) {
-                                Debug.Log(Board.GetNotation(move.file, move.rank));
-                                if (move.file == m.file && move.rank == m.rank) {
+                    King k = Board.instance.GetKing(turnColor);
+                    foreach (Board.Move m in selectedPiece.GetAvailableMoves(Board.instance.GetBoard())) {
+                        if (k.CheckForCheck(Board.instance.GetBoard())) {
+                            if(k.checkCount > 1) {
+                                selectedPiece = k;
+                                break;
+                            }
+                            List<Board.Move> blocks = GetBlocks();
+                            foreach(Board.Move block in blocks) {
+                                if(m.piece == selectedPiece) {
                                     Board.instance.CreateMove(m.file, m.rank);
                                 }
                             }
-                        } else if (king.CheckForCheck() &&  king.checkCount > 1 && selectedPiece != king) {
-                            break;
                         } else {
+                            checkText.text = "";
                             Board.instance.CreateMove(m.file, m.rank);
                         }
                     }
                     hitInfo.transform.GetComponent<Light>().enabled = true;
-                } else if (hitInfo.transform.gameObject.tag == "Move"){
+                } else if (hitInfo.transform.gameObject.tag == "Move") {
                     Board.Square square = Board.instance.GetSquareFromString(hitInfo.transform.parent.name);
                     Board.instance.MakeMove(new Board.Move(square.file, square.rank, selectedPiece), selected);
                     Board.instance.GetKing(turnColor).checkCount = 0;
@@ -102,7 +104,7 @@ public class Game : MonoBehaviour {
     }
     IEnumerator RotateCamera(bool white) {
         float travelTime = 3f;
-        for(float i = 0; i < travelTime; i += Time.deltaTime) {
+        for (float i = 0; i < travelTime; i += Time.deltaTime) {
             if (white) {
                 Camera.main.transform.position = Vector3.Lerp(Camera.main.transform.position, finalPosition, i / travelTime);
                 Camera.main.transform.rotation = Quaternion.Lerp(Camera.main.transform.rotation, finalRotation, i / travelTime);

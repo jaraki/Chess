@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 public class Knight : Piece {
-    public override List<Board.Move> GetAvailableMoves() {
+    public override List<Board.Move> GetAvailableMoves(Board.Square[,] board) {
         List<Board.Move> moves = new List<Board.Move>();
         if(Board.instance.IsLegalMove(new Board.Move(square.file + 2, square.rank + 1, this))) {
             moves.Add(new Board.Move(square.file + 2, square.rank + 1, this));

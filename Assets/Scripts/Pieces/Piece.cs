@@ -13,14 +13,14 @@ public abstract class Piece : MonoBehaviour {
         notation = gameObject.name;
     }
 
-    public virtual List<Board.Move> GetAvailableMoves() {
+    public virtual List<Board.Move> GetAvailableMoves(Board.Square[,] board) {
         List<Board.Move> moves = new List<Board.Move>();
         return moves;
     }
 
-    protected List<Board.Move> GetMovesInDirection(Board.Direction direction, Board.Square square, bool multipleSquares = true, bool isPawn = false) {
+    protected List<Board.Move> GetMovesInDirection(Board.Direction direction, Board.Square square, Board.Square[,] board, bool multipleSquares = true, bool isPawn = false) {
         List<Board.Move> moves = new List<Board.Move>();
-        Board.Square s = Board.instance.GetSquareInDirection(square, direction);
+        Board.Square s = Board.instance.GetSquareInDirection(square, direction, board);
         Board.Square prevS = square;
         while (s != prevS){
             if (s.piece == null) {
@@ -38,7 +38,7 @@ public abstract class Piece : MonoBehaviour {
             }
             
             prevS = s;
-            s = Board.instance.GetSquareInDirection(s, direction);
+            s = Board.instance.GetSquareInDirection(s, direction, board);
         }
         return moves;
     }
