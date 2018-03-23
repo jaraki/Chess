@@ -209,7 +209,7 @@ public class Board : MonoBehaviour {
         piece.tag = "Piece";
         piece.name = name + (rank + 1);
         piece.transform.SetParent(physicalBoard[file, rank].transform, false);
-        piece.transform.position += new Vector3(0, pieceScale * 0.5f, 0);
+        piece.transform.position += new Vector3(0, pieceScale * 0.6f, 0);
         piece.transform.localScale = new Vector3(pieceScale * 0.25f, pieceScale, pieceScale * 0.25f * (color == Color.white ? 1 : -1));
         piece.GetComponent<Renderer>().material.color = color;
 
