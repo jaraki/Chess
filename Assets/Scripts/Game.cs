@@ -12,6 +12,7 @@ public class Game : MonoBehaviour {
     private Vector3 finalPosition;
     private Quaternion finalRotation;
     private Color turnColor;
+    private bool gameEnded;
     // Use this for initialization
     void Start () {
         initialPosition = Camera.main.transform.position;
@@ -19,10 +20,37 @@ public class Game : MonoBehaviour {
         finalPosition = lighting.transform.position;
         finalRotation = lighting.transform.rotation;
         turnColor = Color.white;
+        gameEnded = false;
 	}
 
     private void SwitchTurns() {
         turnColor = turnColor == Color.white ? Color.black : Color.white;
+        if (Board.instance.GetKing(turnColor).CheckForCheck()) {
+            List<Board.Move> blocks = new List<Board.Move>();
+            foreach (Piece p in Board.instance.GetOpposingPieces(Board.GetOppositeColor(turnColor))) {
+                foreach (Board.Move m in p.GetAvailableMoves()) {
+                    King king = Board.instance.GetKing(turnColor);
+                    if (king.checkCount == 1 && selectedPiece != king) {
+                        Piece checker = king.checker;
+                        foreach (Board.Move move in Board.instance.GetMovesBetween(new Board.Move(king.square.file, king.square.rank, king), new Board.Move(checker.square.file, checker.square.rank, checker))) {
+                            Debug.Log(Board.GetNotation(move.file, move.rank));
+                            if (move.file == m.file && move.rank == m.rank) {
+                                blocks.Add(new Board.Move(m.file, m.rank, p));
+                            }
+                        }
+                    } else if (king.checkCount > 1 && selectedPiece != king) {
+                        break;
+                    }
+                }
+            }
+
+            if (Board.instance.GetKing(turnColor).GetAvailableMoves().Count == 0 && blocks.Count == 0 && !gameEnded) {
+                Debug.Log("Checkmate! " + Board.GetOppositeColor(turnColor) + " wins!");
+                gameEnded = true;
+            } else {
+                Debug.Log("Check!");
+            }
+        }
     }
 
     // Update is called once per frame
@@ -46,13 +74,26 @@ public class Game : MonoBehaviour {
                     Debug.Log(Board.GetNotation(selectedPiece.square.file, selectedPiece.square.rank));
                     Board.instance.ClearMoves();
                     foreach (Board.Move m in selectedPiece.GetAvailableMoves()) {
-                        Debug.Log(Board.GetNotation(m.file, m.rank));
-                        Board.instance.CreateMove(m.file, m.rank);
+                        King king = Board.instance.GetKing(turnColor);
+                        if (king.CheckForCheck() && king.checkCount == 1 && selectedPiece != king) {
+                            Piece checker = king.checker;
+                            foreach (Board.Move move in Board.instance.GetMovesBetween(new Board.Move(king.square.file, king.square.rank, king), new Board.Move(checker.square.file, checker.square.rank, checker))) {
+                                Debug.Log(Board.GetNotation(move.file, move.rank));
+                                if (move.file == m.file && move.rank == m.rank) {
+                                    Board.instance.CreateMove(m.file, m.rank);
+                                }
+                            }
+                        } else if (king.CheckForCheck() &&  king.checkCount > 1 && selectedPiece != king) {
+                            break;
+                        } else {
+                            Board.instance.CreateMove(m.file, m.rank);
+                        }
                     }
                     hitInfo.transform.GetComponent<Light>().enabled = true;
                 } else if (hitInfo.transform.gameObject.tag == "Move"){
                     Board.Square square = Board.instance.GetSquareFromString(hitInfo.transform.parent.name);
                     Board.instance.MakeMove(new Board.Move(square.file, square.rank, selectedPiece), selected);
+                    Board.instance.GetKing(turnColor).checkCount = 0;
                     SwitchTurns();
                     StartCoroutine(RotateCamera(selectedPiece.color == Color.white));
                 }
@@ -60,7 +101,6 @@ public class Game : MonoBehaviour {
         }
     }
     IEnumerator RotateCamera(bool white) {
-        float x = Camera.main.transform.position.x;
         float travelTime = 3f;
         for(float i = 0; i < travelTime; i += Time.deltaTime) {
             if (white) {

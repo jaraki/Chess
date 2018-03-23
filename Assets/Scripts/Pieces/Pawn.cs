@@ -10,7 +10,7 @@ public class Pawn : Piece {
         } else {
             moves.AddRange(GetMovesInDirection(Board.Direction.South, square, false, true));
         }
-        if(moveHistory.Count == 0 && moves.Count > 0) {
+        if(moveHistory != null && moveHistory.Count == 0 && moves.Count > 0) {
             if (color == Color.white) {
                 moves.AddRange(GetMovesInDirection(Board.Direction.North, Board.instance.GetSquareInDirection(square, Board.Direction.North), false, true));
             } else {

@@ -100,6 +100,28 @@ public class Board : MonoBehaviour {
         return null;
     }
 
+    public List<Piece> GetOpposingPieces(Color color) {
+        if(color == Color.white) {
+            return blackPieces;
+        } else {
+            return whitePieces;
+        }
+    }
+
+    public List<Move> GetMovesBetween(Move start, Move end) {
+        List<Move> between = new List<Move>();
+        int xDiff = start.file - end.file;
+        int yDiff = start.rank - end.rank;
+        int xSign = xDiff > 0 ? 1 : -1;
+        int ySign = yDiff > 0 ? 1 : -1;
+        for(int i = 0; i < xDiff * xSign; ++i) {
+            for(int j = 0; j < yDiff * ySign; ++j) {
+                between.Add(new Move((start.file + xSign * i) % RankCount, (start.rank + ySign * j) % FileCount, start.piece));
+            }
+        }
+        return between;
+    }
+
     public static Color GetOppositeColor(Color color) {
         if(color == Color.white) {
             return Color.black;
@@ -122,6 +144,13 @@ public class Board : MonoBehaviour {
             board[move.piece.color == Color.white ? 0 : 7, 5].piece = rook;
             rook.square = GetSquare(move.piece.color == Color.white ? 0 : 7, 5);
             rook.transform.SetParent(physicalBoard[move.piece.color == Color.white ? 0 : 7, 5].transform, false);
+        }
+        if (move.piece.GetType() == typeof(King) && move.piece.moveHistory.Count == 0 && (move.piece.color == Color.white ? move.file == 2 && move.rank == 0 : move.file == 2 && move.rank == 7)) {
+            Piece rook = board[move.piece.color == Color.white ? 0 : 7, 0].piece;
+            board[move.piece.color == Color.white ? 0 : 7, 0].piece = null;
+            board[move.piece.color == Color.white ? 0 : 7, 3].piece = rook;
+            rook.square = GetSquare(move.piece.color == Color.white ? 0 : 7, 3);
+            rook.transform.SetParent(physicalBoard[move.piece.color == Color.white ? 0 : 7, 3].transform, false);
         }
         board[move.piece.square.file, move.piece.square.rank].piece = null;
         board[move.rank, move.file].piece = move.piece;
