@@ -18,7 +18,8 @@ public class Menu : MonoBehaviour {
     public void LoadLevel(string action) {
         if(action == "Quit") {
             Application.Quit();
+        } else {
+            SceneManager.LoadScene(action);
         }
-        SceneManager.LoadScene(action);
     }
 }
